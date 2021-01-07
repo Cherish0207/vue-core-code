@@ -12,7 +12,8 @@ let methods = [
 methods.forEach(method => {
     arrayMethods[method] = function (...args) {
         const result = oldArrayProtoMethods[method].apply(this, args);
-        const ob = this.__ob__;
+        // AOP 切片编程
+        const ob = this.__ob__;// 拿到当前observe实例
         let inserted;
         switch (method) {
             case 'push':

@@ -1,3 +1,4 @@
+import {isObject, def} from '../utils/index'
 import {arrayMethods} from './array';
 
 function proxy(vm,source,key){
@@ -11,18 +12,16 @@ function proxy(vm,source,key){
   });
 }
 
+
 class Observer {
   constructor(data) {
-    Object.defineProperty(value,'__ob__',{
-      enumerable:false,
-      configurable:false,
-      value:this
-    });
+    // 给每一个监控过的对象都添加一个__ob__属性
+    def(data, '__ob__', this)
     for(let key in data){ // 将_data上的属性全部代理给vm实例
       proxy(vm,'_data',key)
     }
     if(Array.isArray(data)) {
-      value.__proto__ = arrayMethods
+      data.__proto__ = arrayMethods
       this.observeArray(data)
     }else {
       this.walk(data)
@@ -56,7 +55,7 @@ function defineReactive(data, key, value) {
   })
 }
 export function observe(data) {
-  if(typeof data === 'object' && data !== null) {
+  if(isObject(data)) {
     return new Observer(data)
   }
 }
