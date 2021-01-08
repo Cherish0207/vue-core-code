@@ -1,5 +1,3 @@
-import { isObject } from "lodash";
-
 /**
  *
  * @param {*} data 当前数据是不是对象

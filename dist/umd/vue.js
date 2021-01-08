@@ -98,6 +98,28 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
+  /**
+   *
+   * @param {*} data 当前数据是不是对象
+   */
+  function isObject(data) {
+    return _typeof(data) === "object" && data !== null;
+  }
+  /**
+   *
+   * @param {*} data
+   * @param {*} key
+   * @param {*} value 定义不可枚举属性
+   */
+
+  function def(data, key, value) {
+    Object.defineProperty(data, key, {
+      enumerable: false,
+      configurable: false,
+      value: value
+    });
+  }
+
   var oldArrayProtoMethods = Array.prototype;
   var arrayMethods = Object.create(oldArrayProtoMethods);
   var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
@@ -107,8 +129,10 @@
         args[_key] = arguments[_key];
       }
 
-      var result = oldArrayProtoMethods[method].apply(this, args);
-      var ob = this.__ob__;
+      var result = oldArrayProtoMethods[method].apply(this, args); // AOP 切片编程
+
+      var ob = this.__ob__; // 拿到当前observe实例
+
       var inserted;
 
       switch (method) {
@@ -142,11 +166,8 @@
     function Observer(data) {
       _classCallCheck(this, Observer);
 
-      Object.defineProperty(value, '__ob__', {
-        enumerable: false,
-        configurable: false,
-        value: this
-      });
+      // 给每一个监控过的对象都添加一个__ob__属性
+      def(data, '__ob__', this);
 
       for (var key in data) {
         // 将_data上的属性全部代理给vm实例
@@ -154,7 +175,7 @@
       }
 
       if (Array.isArray(data)) {
-        value.__proto__ = arrayMethods;
+        data.__proto__ = arrayMethods;
         this.observeArray(data);
       } else {
         this.walk(data);
@@ -197,7 +218,7 @@
   }
 
   function observe(data) {
-    if (_typeof(data) === 'object' && data !== null) {
+    if (isObject(data)) {
       return new Observer(data);
     }
   }
@@ -207,35 +228,21 @@
 
     if (opts.data) {
       initData();
-    } // if(opts.props) {
-    //   initProps(vm)
-    // }
-    // if(opts.methods) {
-    //   initMethod(vm)
-    // }
-    // if(opts.computed) {
-    //   initComputed(vm)
-    // }
-    // if(opts.watch) {
-    //   initWatch(vm)
-    // }
-
+    }
   }
 
   function initData() {
     var data = this.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
     observe(data);
-  } // function initProps(){}
-  // function initMethod(){}
-  // function initComputed(){}
-  // function initWatch(){}
+  }
 
-  var ncname = "[a-zA-Z_][\\-.0-9_a-zA-Z]*";
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*";
   var qnameCapture = "((?:".concat(ncname, ":)?").concat(ncname, ")");
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
 
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的 </div>
+  //    attr   =   
 
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
 
@@ -259,6 +266,8 @@
   }
 
   function start(tagName, attrs) {
+    console.log("\u5F00\u59CB".concat(tagName, "\u6807\u7B7E\uFF0Cattrs\u662F"));
+    console.log(attrs);
     var element = createASTElement(tagName, attrs);
 
     if (!root) {
@@ -270,6 +279,7 @@
   }
 
   function end(tagName) {
+    console.log("\u7ED3\u675F".concat(tagName, "\u6807\u7B7E"));
     var element = stack.pop();
     currentParent = stack[stack.length - 1];
 
@@ -280,6 +290,7 @@
   }
 
   function chars(text) {
+    console.log("\u6587\u672C\u662F".concat(text));
     text = text.replace(/\s/g, '');
 
     if (text) {
@@ -321,7 +332,8 @@
         advance(text.length);
         chars(text);
       }
-    }
+    } // 前进n个
+
 
     function advance(n) {
       html = html.substring(n);
@@ -334,20 +346,23 @@
         var match = {
           tagName: start[1],
           attrs: []
-        };
+        }; // 将标签删除
+
         advance(start[0].length);
 
         var attr, _end;
 
         while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
-          advance(attr[0].length);
+          advance(attr[0].length); // 将属性删除
+
           match.attrs.push({
             name: attr[1],
-            value: attr[3]
+            value: attr[3] || attr[4] || attr[5]
           });
         }
 
         if (_end) {
+          // 去掉开始标签的 >
           advance(_end[0].length);
           return match;
         }
@@ -450,7 +465,7 @@
       var vm = this;
       this.$options = options; // 初始化状态
 
-      initState(vm); // 页面挂载
+      initState(vm); // 页面挂载：如果用户
 
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);

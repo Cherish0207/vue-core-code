@@ -5,7 +5,13 @@ Rollup 是一个 JavaScript 模块打包器,可以将小块代码编译成大块
 
 ### 2.环境搭建
 
-安装rollup环境
+安装rollup环境：
+- rollup （打包工具）
+- @babel/core （babel核心模块）
+- @babel/preset-env （babel将高级语法转低级语法）
+- rollup-plugin-babel （桥梁）
+- rollup-plugin-serve （实现静态服务）
+- cross-env （设置环境变量）
 ```
 npm install @babel/preset-env @babel/core rollup rollup-plugin-babel rollup-plugin-serve cross-env -D
 ```
@@ -45,6 +51,8 @@ export default {
 }
 ```
 执行脚本配置
+- -c 根据配置文件打包
+- -w实时打包
 ```json
 "scripts": {
     "build:dev": "rollup -c",
@@ -54,14 +62,15 @@ export default {
 
 ## 二.Vue响应式原理
 
-导出vue构造函数
+`index.js` : 导出 `vue` 构造函数
+* Vue的核心代码，只是 `Vue` 的一个声明
+* 通过引入文件的方式给 `Vue` 原型添加方法
 ```js
 import {initMixin} from './init';
-
 function Vue(options) {
     this._init(options);
 }
-initMixin(Vue); // 给原型上新增_init方法
+initMixin(Vue); // 给原型上新增_init方法，_init方法中进行Vue的初始化操作
 export default Vue;
 ```
 init方法中初始化vue状态
@@ -103,7 +112,14 @@ function initData(){}
 function initComputed(){}
 function initWatch(){}
 ```
-### 1.初始化数据
+### 1.初始化数据 --- observe 核心模块
+* 目的：对象劫持 —— 当用户改变数据时，希望可以得到通知，然后刷新页面 
+* （MVVM模式-数据变化可以驱动视图变化）
+* 方法：
+* vue2: `es5` 的 `object. defineproperty` 给属性增加get方法和set方法，把 `data` 中的数据都使用 `object. defineproperty` 重新定义.(不能兼容ie8及以下, 所以vue2无法兼容ie8版本)
+* 缺点：需要递归解析对象中的属性,依次増加set和get方法。如果数据的层次过多影响性能。
+* vue3: `proxy` 性能更好，不需要设置get set, 不需要递归
+
 ```js
 import {observe} from './observer/index.js'
 function initData(vm){

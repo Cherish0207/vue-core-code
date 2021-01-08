@@ -1,8 +1,9 @@
-const ncname = `[a-zA-Z_][\\-\.0-9_a-zA-Z]*`;  
+const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`;  
 const qnameCapture = `((?:${ncname}\:)?${ncname})`;
 const startTagOpen = new RegExp(`^<${qnameCapture}`); // 标签开头的正则 捕获的内容是标签名
 
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`); // 匹配标签结尾的 </div>
+ //    attr   =   
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
 const startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
@@ -22,6 +23,8 @@ function createASTElement(tagName,attrs){
     }
 }
 function start(tagName, attrs) {
+    console.log(`开始${tagName}标签，attrs是`);
+    console.log(attrs);
     let element = createASTElement(tagName,attrs);
     if(!root){
         root = element;
@@ -30,6 +33,7 @@ function start(tagName, attrs) {
     stack.push(element);
 }
 function end(tagName) {
+    console.log(`结束${tagName}标签`);
     let element = stack.pop();
     currentParent = stack[stack.length-1];
     if(currentParent){
@@ -38,6 +42,7 @@ function end(tagName) {
     }
 }
 function chars(text) {
+    console.log(`文本是${text}`);
     text = text.replace(/\s/g,'');
     if(text){
         currentParent.children.push({
@@ -71,6 +76,7 @@ function parseHTML(html){
             chars(text);
         }
     }
+    // 前进n个
     function advance(n){
         html = html.substring(n);
     }
@@ -81,13 +87,14 @@ function parseHTML(html){
                 tagName:start[1],
                 attrs:[]
             }
+            // 将标签删除
             advance(start[0].length);
             let attr,end;
             while(!(end = html.match(startTagClose)) && (attr = html.match(attribute))){
-                advance(attr[0].length);
-                match.attrs.push({name:attr[1],value:attr[3]});
+                advance(attr[0].length);// 将属性删除
+                match.attrs.push({name:attr[1],value:attr[3]||attr[4]||attr[5]});
             }
-            if(end){
+            if(end){ // 去掉开始标签的 >
                 advance(end[0].length);
                 return match
             }

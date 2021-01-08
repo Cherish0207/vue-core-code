@@ -1,5 +1,5 @@
 import {initState} from './state'
-import {compileToFunctions} from './template/index'
+import {compileToFunctions} from './compiler/index'
 
 export function initMixin (Vue) {
   Vue.prototype._init = function(options) {
