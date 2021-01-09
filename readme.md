@@ -250,4 +250,285 @@ function initData(vm){
     }
     observe(data);
 }
+``` 
+## 三.模板编译：将template编译成render函数
+- 1.正则解析（起始）标签、属性、文本内容、结束标签，等待分别处理：（核心方法：parseHTML）
+- 2.基于上面的解析，生成ast语法树：（核心思路：stack先进后出后进先出）
+    - ast语法树：用对象描述js原生语法的
+    - 虚拟dom：用对象描述dom节点的
+- 3.根据ast语法树，生成render函数的结果：(核心方法generate)
+    - let code = generate(root)
+    - `render(){
+   return _c('div',{style:{color:'red'}},_v('hello'+_s(name)),_c('span',undefined,''))
+}`
+- 4.最后生成`render`函数
+
+```html
+<div id="app">
+    <span>hello</span>
+</div>
 ```
+```js
+// ast语法树
+let root = {
+    tag: 'div',
+    attrs: [{name: 'id', value: 'app'}],
+    parent: null,
+    type:1,
+    children: [
+        {
+            tag: 'p',
+            attrs: [],
+            parent: root,
+            children: [
+                {
+                    text: 'hello',
+                    type: 3
+                }
+            ]
+        }
+    ]
+}
+// 虚拟dom
+let virtualdom = {
+  tag: "div",
+  type: 1,
+  children: [
+    {
+      tag: "span",
+      type: 1,
+      attrs: [],
+      parent: "div对象",
+    },
+  ],
+  attrs: [
+    {
+      name: "zf",
+      age: 10,
+    },
+  ],
+  parent: null,
+}
+```
+p.s.
+- vue1.0: 纯字符串编译，正则转换
+- vue2.0: 虚拟dom，可以dom-diff操作
+
+直接上代码
+```js
+// init.js
+  import {initState} from './state'
++ import {compileToFunctions} from './compiler/index'
++ 
+  export function initMixin (Vue) {
+    Vue.prototype._init = function(options) {
+      const vm = this
+      this.$options = options
++     // 初始化状态
++     initState(vm);
++ 
++     // 页面挂载
++     if (vm.$options.el) {
++     	vm.$mount(vm.$options.el);
++     }
++   }
++   Vue.prototype.$mount = function(el) {
++     const vm = this
++     const options = this.$options
++     el = document.querySelector(el)
++ 
++     // 如果没有render方法,将template编译成render函数
++     if(!options.render) {
++       let template = options.template
++       if(!template && el) {
++         template = el.outerHTML
++       }
++       const render = compileToFunctions(template);
++       options.render = render;
++     }
+    }
+  }
+```
+
+```js
+// compiler/parser-html.js
+const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`;
+const qnameCapture = `((?:${ncname}\:)?${ncname})`;
+const startTagOpen = new RegExp(`^<${qnameCapture}`); // 标签开头的正则 捕获的内容是标签名
+
+const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`); // 匹配标签结尾的 </div>
+const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
+const startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
+const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+let root;
+let currentParent;
+let stack = [];
+const ELEMENT_TYPE = 1;
+const TEXT_TYPE = 3;
+
+function createASTElement(tagName, attrs) {
+  return {
+    tag: tagName,
+    type: ELEMENT_TYPE,
+    children: [],
+    attrs,
+    parent: null,
+  };
+}
+function start(tagName, attrs) {
+  console.log(`开始${tagName}标签，attrs是`);
+  console.log(attrs);
+  let element = createASTElement(tagName, attrs);
+  if (!root) {
+    root = element;
+  }
+  currentParent = element;
+  stack.push(element);
+}
+function end(tagName) {
+  console.log(`结束${tagName}标签`);
+  let element = stack.pop();
+  currentParent = stack[stack.length - 1];
+  if (currentParent) {
+    element.parent = currentParent;
+    currentParent.children.push(element);
+  }
+}
+function chars(text) {
+  console.log(`文本是${text}`);
+  text = text.replace(/\s/g, "");
+  if (text) {
+    currentParent.children.push({
+      type: TEXT_TYPE,
+      text,
+    });
+  }
+}
+function parseHTML(html) {
+  while (html) {
+    let textEnd = html.indexOf("<");
+    if (textEnd == 0) {
+      const startTagMatch = parseStartTag();
+      if (startTagMatch) {
+        start(startTagMatch.tagName, startTagMatch.attrs);
+        continue;
+      }
+      const endTagMatch = html.match(endTag);
+      if (endTagMatch) {
+        advance(endTagMatch[0].length);
+        end(endTagMatch[1]);
+        continue;
+      }
+    }
+    let text;
+    if (textEnd >= 0) {
+      text = html.substring(0, textEnd);
+    }
+    if (text) {
+      advance(text.length);
+      chars(text);
+    }
+  }
+  // 前进n个
+  function advance(n) {
+    html = html.substring(n);
+  }
+  function parseStartTag() {
+    const start = html.match(startTagOpen);
+    if (start) {
+      const match = {
+        tagName: start[1],
+        attrs: [],
+      };
+      // 将标签删除
+      advance(start[0].length);
+      let attr, end;
+      while (
+        !(end = html.match(startTagClose)) &&
+        (attr = html.match(attribute))
+      ) {
+        advance(attr[0].length); // 将属性删除
+        match.attrs.push({
+          name: attr[1],
+          value: attr[3] || attr[4] || attr[5],
+        });
+      }
+      if (end) {
+        // 去掉开始标签的 >
+        advance(end[0].length);
+        return match;
+      }
+    }
+  }
+}
+
+export function compileToFunctions(template) {
+  parseHTML(template);
+
+  function gen(node) {
+    if (node.type == 1) {
+      return generate(node);
+    } else {
+      let text = node.text;
+      if (!defaultTagRE.test(text)) {
+        return `_v(${JSON.stringify(text)})`;
+      }
+      let lastIndex = (defaultTagRE.lastIndex = 0);
+      let tokens = [];
+      let match, index;
+
+      while ((match = defaultTagRE.exec(text))) {
+        index = match.index;
+        if (index > lastIndex) {
+          tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+        }
+        tokens.push(`_s(${match[1].trim()})`);
+        lastIndex = index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        tokens.push(JSON.stringify(text.slice(lastIndex)));
+      }
+      return `_v(${tokens.join("+")})`;
+    }
+  }
+  function getChildren(el) {
+    // 生成儿子节点
+    const children = el.children;
+    if (children) {
+      const res = `${children.map((c) => gen(c)).join(",")}`;
+      return res;
+    } else {
+      return false;
+    }
+  }
+  function genProps(attrs) {
+    // 生成属性
+    let str = "";
+    for (let i = 0; i < attrs.length; i++) {
+      let attr = attrs[i];
+      if (attr.name === "style") {
+        let obj = {};
+        attr.value.split(";").forEach((item) => {
+          let [key, value] = item.split(":");
+          obj[key] = value;
+        });
+        attr.value = obj;
+      }
+      str += `${attr.name}:${JSON.stringify(attr.value)},`;
+    }
+    return `{${str.slice(0, -1)}}`;
+  }
+  function generate(el) {
+    let children = getChildren(el);
+    let code = `_c('${el.tag}',${
+      el.attrs.length ? `${genProps(el.attrs)}` : "undefined"
+    }${children ? `,${children}` : ""})`;
+    return code;
+  }
+  let code = generate(root);
+  let render = `with(this){return ${code}}`;
+  let renderFn = new Function(render);
+  return renderFn;
+}
+```
+## 四.创建渲染watcher

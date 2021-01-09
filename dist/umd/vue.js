@@ -119,10 +119,27 @@
       value: value
     });
   }
+  /**
+   * 
+   * @param {*} vm 
+   * @param {*} source 
+   * @param {*} key 
+   */
+
+  function proxy(vm, source, key) {
+    Object.defineProperty(vm, key, {
+      get: function get() {
+        return vm[source][key];
+      },
+      set: function set(newValue) {
+        vm[source][key] = newValue;
+      }
+    });
+  }
 
   var oldArrayProtoMethods = Array.prototype;
   var arrayMethods = Object.create(oldArrayProtoMethods);
-  var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
+  var methods = ["push", "pop", "shift", "unshift", "reverse", "sort", "splice"];
   methods.forEach(function (method) {
     arrayMethods[method] = function () {
       for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -136,12 +153,12 @@
       var inserted;
 
       switch (method) {
-        case 'push':
-        case 'unshift':
+        case "push":
+        case "unshift":
           inserted = args;
           break;
 
-        case 'splice':
+        case "splice":
           inserted = args.slice(2);
       }
 
@@ -151,28 +168,12 @@
     };
   });
 
-  function proxy(vm, source, key) {
-    Object.defineProperty(vm, key, {
-      get: function get() {
-        return vm[source][key];
-      },
-      set: function set(newValue) {
-        vm[source][key] = newValue;
-      }
-    });
-  }
-
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
       _classCallCheck(this, Observer);
 
       // 给每一个监控过的对象都添加一个__ob__属性
-      def(data, '__ob__', this);
-
-      for (var key in data) {
-        // 将_data上的属性全部代理给vm实例
-        proxy(vm, '_data', key);
-      }
+      def(data, "__ob__", this);
 
       if (Array.isArray(data)) {
         data.__proto__ = arrayMethods;
@@ -194,8 +195,7 @@
       value: function walk(data) {
         var keys = Object.keys(data);
         keys.forEach(function (key) {
-          value = data[key];
-          defineReactive(data, key, value);
+          defineReactive(data, key, data[key]);
         });
       }
     }]);
@@ -227,13 +227,19 @@
     var opts = vm.$options;
 
     if (opts.data) {
-      initData();
+      initData(vm);
     }
   }
 
-  function initData() {
-    var data = this.$options.data;
-    data = vm._data = typeof data === 'function' ? data.call(vm) : data;
+  function initData(vm) {
+    var data = vm.$options.data;
+    data = vm._data = typeof data === "function" ? data.call(vm) : data;
+
+    for (var key in data) {
+      // 将_data上的属性全部代理给vm实例
+      proxy(vm, "_data", key);
+    }
+
     observe(data);
   }
 
@@ -242,13 +248,11 @@
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
 
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的 </div>
-  //    attr   =   
 
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
 
   var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
 
-  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
   var root;
   var currentParent;
   var stack = [];
@@ -291,7 +295,7 @@
 
   function chars(text) {
     console.log("\u6587\u672C\u662F".concat(text));
-    text = text.replace(/\s/g, '');
+    text = text.replace(/\s/g, "");
 
     if (text) {
       currentParent.children.push({
@@ -303,7 +307,7 @@
 
   function parseHTML(html) {
     while (html) {
-      var textEnd = html.indexOf('<');
+      var textEnd = html.indexOf("<");
 
       if (textEnd == 0) {
         var startTagMatch = parseStartTag();
@@ -368,92 +372,94 @@
         }
       }
     }
+
+    return root;
   }
 
-  function compileToFunctions(template) {
-    parseHTML(template);
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+  function generate(el) {
+    var children = getChildren(el);
+    var code = "_c('".concat(el.tag, "',").concat(el.attrs.length ? "".concat(genProps(el.attrs)) : "undefined").concat(children ? ",".concat(children) : "", ")");
+    return code;
+  }
 
-    function gen(node) {
-      if (node.type == 1) {
-        return generate(node);
-      } else {
-        var text = node.text;
+  function getChildren(el) {
+    // 生成儿子节点
+    var children = el.children;
 
-        if (!defaultTagRE.test(text)) {
-          return "_v(".concat(JSON.stringify(text), ")");
-        }
-
-        var lastIndex = defaultTagRE.lastIndex = 0;
-        var tokens = [];
-        var match, index;
-
-        while (match = defaultTagRE.exec(text)) {
-          index = match.index;
-
-          if (index > lastIndex) {
-            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
-          }
-
-          tokens.push("_s(".concat(match[1].trim(), ")"));
-          lastIndex = index + match[0].length;
-        }
-
-        if (lastIndex < text.length) {
-          tokens.push(JSON.stringify(text.slice(lastIndex)));
-        }
-
-        return "_v(".concat(tokens.join('+'), ")");
-      }
+    if (children) {
+      var res = "".concat(children.map(function (c) {
+        return gen(c);
+      }).join(","));
+      return res;
+    } else {
+      return false;
     }
+  }
 
-    function getChildren(el) {
-      // 生成儿子节点
-      var children = el.children;
+  function genProps(attrs) {
+    // 生成属性
+    var str = "";
 
-      if (children) {
-        var res = "".concat(children.map(function (c) {
-          return gen(c);
-        }).join(','));
-        return res;
-      } else {
-        return false;
-      }
-    }
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
 
-    function genProps(attrs) {
-      // 生成属性
-      var str = '';
+      if (attr.name === "style") {
+        (function () {
+          var obj = {};
+          attr.value.split(";").forEach(function (item) {
+            var _item$split = item.split(":"),
+                _item$split2 = _slicedToArray(_item$split, 2),
+                key = _item$split2[0],
+                value = _item$split2[1];
 
-      for (var i = 0; i < attrs.length; i++) {
-        var attr = attrs[i];
-
-        if (attr.name === 'style') {
-          (function () {
-            var obj = {};
-            attr.value.split(';').forEach(function (item) {
-              var _item$split = item.split(':'),
-                  _item$split2 = _slicedToArray(_item$split, 2),
-                  key = _item$split2[0],
-                  value = _item$split2[1];
-
-              obj[key] = value;
-            });
-            attr.value = obj;
-          })();
-        }
-
-        str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+            obj[key] = value;
+          });
+          attr.value = obj;
+        })();
       }
 
-      return "{".concat(str.slice(0, -1), "}");
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
     }
 
-    function generate(el) {
-      var children = getChildren(el);
-      var code = "_c('".concat(el.tag, "',").concat(el.attrs.length ? "".concat(genProps(el.attrs)) : 'undefined').concat(children ? ",".concat(children) : '', ")");
-      return code;
-    }
+    return "{".concat(str.slice(0, -1), "}");
+  }
 
+  function gen(node) {
+    if (node.type == 1) {
+      return generate(node);
+    } else {
+      var text = node.text;
+
+      if (!defaultTagRE.test(text)) {
+        return "_v(".concat(JSON.stringify(text), ")");
+      }
+
+      var lastIndex = defaultTagRE.lastIndex = 0;
+      var tokens = [];
+      var match, index;
+
+      while (match = defaultTagRE.exec(text)) {
+        index = match.index;
+
+        if (index > lastIndex) {
+          tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+        }
+
+        tokens.push("_s(".concat(match[1].trim(), ")"));
+        lastIndex = index + match[0].length;
+      }
+
+      if (lastIndex < text.length) {
+        tokens.push(JSON.stringify(text.slice(lastIndex)));
+      }
+
+      return "_v(".concat(tokens.join("+"), ")");
+    }
+  }
+
+  function compileToFunctions(template, vm) {
+    var root = parseHTML(template);
     var code = generate(root);
     var render = "with(this){return ".concat(code, "}");
     var renderFn = new Function(render);
@@ -465,7 +471,7 @@
       var vm = this;
       this.$options = options; // 初始化状态
 
-      initState(vm); // 页面挂载：如果用户
+      initState(vm); // 页面挂载
 
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
