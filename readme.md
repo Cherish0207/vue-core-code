@@ -532,3 +532,173 @@ export function compileToFunctions(template) {
 }
 ```
 ## 四.创建渲染watcher
+
+- Watcher就是用来渲染的
+`vm._render` 通过解析的`render`方法渲染出虚拟`dom`
+`vm._update` 通过虚拟`dom`创建真实的`dom`
+
+1)将 template转换成ast语法树->生成 render方法->生成虚拟dom->真实的dom 
+重新生成虚拟dom->更新dom
+
+先调用_render方法生成虚拟dom,通过_update方法将虚拟dom创建成真实的dom
+
+### 1.初始化渲染Watcher
+```js
+// init.js
+import {mountComponent} from './lifecycle'
+Vue.prototype.$mount = function (el) {
+    const vm = this;
+    const options = vm.$options;
+    el = document.querySelector(el);
+
+    // 如果没有render方法
+    if (!options.render) {
+        let template = options.template;
+        // 如果没有模板但是有el
+        if (!template && el) {
+            template = el.outerHTML;
+        }
+
+        const render= compileToFunctions(template);
+        options.render = render;
+    }
+    mountComponent(vm,el);
+}
+```
+```js
+// lifecycle.js
+export function lifecycleMixin() {
+    Vue.prototype._update = function (vnode) {}
+}
+export function mountComponent(vm, el) {
+    vm.$el = el;
+    let updateComponent = () => {
+        // 将虚拟节点 渲染到页面上
+        vm._update(vm._render());
+    }
+    new Watcher(vm, updateComponent, () => {}, true);
+}
+```
+```js
+// render.js
+export function renderMixin(Vue){
+    Vue.prototype._render = function () {}
+}
+```
+```js
+// watcher.js
+let id = 0;
+class Watcher {
+    constructor(vm, exprOrFn, cb, options) {
+        this.vm = vm;
+        this.exprOrFn = exprOrFn;
+        if (typeof exprOrFn == 'function') {
+            this.getter = exprOrFn;
+        }
+        this.cb = cb;
+        this.options = options;
+        this.id = id++;
+        this.get();
+    }
+    get() {
+        this.getter();
+    }
+}
+export default Watcher;
+```
+
+### 2.生成虚拟dom
+```js
+// render.js
+import {createTextNode,createElement} from './vdom/create-element'
+export function renderMixin(Vue){
+    Vue.prototype._v = function (text) { // 创建文本
+        return createTextNode(text);
+    }
+    Vue.prototype._c = function () { // 创建元素
+        return createElement(...arguments);
+    }
+    Vue.prototype._s = function (val) {
+        return val == null? '' : (typeof val === 'object'?JSON.stringify(val):val);
+    }
+    Vue.prototype._render = function () {
+        const vm = this;
+        const {render} = vm.$options;
+        let vnode = render.call(vm);
+        return vnode;
+    }
+}
+```
+```js
+// 创建虚拟节点
+export function createTextNode(text) {
+    return vnode(undefined,undefined,undefined,undefined,text)
+}
+export function createElement(tag,data={},...children){
+    let key = data.key;
+    if(key){
+        delete data.key;
+    }
+    return vnode(tag,data,key,children);
+}
+function vnode(tag,data,key,children,text){
+    return {
+        tag,
+        data,
+        key,
+        children,
+        text
+    }
+}
+```
+### 3.生成真实DOM元素
+```js
+// 将虚拟节点渲染成真实节点
+import {patch} './observer/patch'
+export function lifecycleMixin(Vue){
+    Vue.prototype._update = function (vnode) {
+        const vm = this;
+        vm.$el = patch(vm.$el,vnode);
+    }
+}
+export function patch(oldVnode,vnode){
+    const isRealElement = oldVnode.nodeType;
+    if(isRealElement){
+        const oldElm = oldVnode;
+        const parentElm = oldElm.parentNode;
+        
+        let el = createElm(vnode);
+        parentElm.insertBefore(el,oldElm.nextSibling);
+        parentElm.removeChild(oldVnode)
+   		return el;
+    } 
+}
+function createElm(vnode){
+    let {tag,children,key,data,text} = vnode;
+    if(typeof tag === 'string'){
+        vnode.el = document.createElement(tag);
+        updateProperties(vnode);
+        children.forEach(child => { 
+            return vnode.el.appendChild(createElm(child));
+        });
+    }else{
+        vnode.el = document.createTextNode(text);
+    }
+    return vnode.el
+}
+function updateProperties(vnode){
+    let newProps = vnode.data || {}; // 获取当前老节点中的属性 
+    let el = vnode.el; // 当前的真实节点
+    for(let key in newProps){
+        if(key === 'style'){ 
+            for(let styleName in newProps.style){
+                el.style[styleName] = newProps.style[styleName]
+            }
+        }else if(key === 'class'){
+            el.className= newProps.class
+        }else{ // 给这个元素添加属性 值就是对应的值
+            el.setAttribute(key,newProps[key]);
+        }
+    }
+}
+```
