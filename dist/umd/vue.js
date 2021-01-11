@@ -1,6 +1,6 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('debug')) :
+  typeof define === 'function' && define.amd ? define(['debug'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
@@ -40,6 +40,55 @@
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
     return Constructor;
+  }
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
   }
 
   function _slicedToArray(arr, i) {
@@ -270,8 +319,8 @@
   }
 
   function start(tagName, attrs) {
-    console.log("\u5F00\u59CB".concat(tagName, "\u6807\u7B7E\uFF0Cattrs\u662F"));
-    console.log(attrs);
+    // console.log(`开始${tagName}标签，attrs是`);
+    // console.log(attrs);
     var element = createASTElement(tagName, attrs);
 
     if (!root) {
@@ -283,7 +332,7 @@
   }
 
   function end(tagName) {
-    console.log("\u7ED3\u675F".concat(tagName, "\u6807\u7B7E"));
+    // console.log(`结束${tagName}标签`);
     var element = stack.pop();
     currentParent = stack[stack.length - 1];
 
@@ -294,7 +343,7 @@
   }
 
   function chars(text) {
-    console.log("\u6587\u672C\u662F".concat(text));
+    // console.log(`文本是${text}`);
     text = text.replace(/\s/g, "");
 
     if (text) {
@@ -555,6 +604,7 @@
   }
   function mountComponent(vm, el) {
     vm.$el = el;
+    callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
       // 将虚拟节点 渲染到页面上
@@ -562,14 +612,72 @@
     };
 
     new Watcher(vm, updateComponent, function () {}, true);
+    callHook(vm, 'mounted');
+  }
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook];
+
+    if (handlers) {
+      for (var i = 0; i < handlers.length; i++) {
+        handlers[i].call(vm);
+      }
+    }
+  }
+
+  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed'];
+  var strats = {};
+
+  function mergeHook(parentVal, childValue) {
+    if (childValue) {
+      if (parentVal) {
+        return parentVal.concat(childValue);
+      } else {
+        return [childValue];
+      }
+    } else {
+      return parentVal;
+    }
+  }
+
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strats[hook] = mergeHook;
+  });
+  function mergeOptions(parent, child) {
+    var options = {};
+
+    for (var key in parent) {
+      mergeField(key);
+    }
+
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+
+    function mergeField(key) {
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+      } else {
+        if (_typeof(parent[key]) == 'object' && _typeof(child[key]) == 'object') {
+          options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
+        } else {
+          options[key] = child[key];
+        }
+      }
+    }
+
+    return options;
   }
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      this.$options = options; // 初始化状态
+      this.$options = mergeOptions(vm.constructor.options, options); // 初始化状态
 
-      initState(vm); // 页面挂载
+      callHook(vm, 'beforeCreate');
+      initState(vm);
+      callHook(vm, 'created'); // 页面挂载
 
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
@@ -643,9 +751,19 @@
     Vue.prototype._render = function () {
       var vm = this;
       var render = vm.$options.render;
-      var vnode = render.call(vm);
-      console.log(vnode);
+      var vnode = render.call(vm); // console.log(vnode);
+
       return vnode;
+    };
+  }
+
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+
+    Vue.mixin = function (mixin) {
+      // 将属性合并到Vue.options上
+      this.options = mergeOptions(this.options, mixin);
+      return this;
     };
   }
 
@@ -656,6 +774,7 @@
   initMixin(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
+  initGlobalAPI(Vue);
 
   return Vue;
 

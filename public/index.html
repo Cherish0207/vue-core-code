@@ -18,7 +18,13 @@
           age: 18,
         }
       },
-      el: '#app'
+      el: '#app',
+      created() {
+        console.log('created')
+      },
+      mounted() {
+        console.log('mounted')
+      },
     })
     console.log(vm);
   </script>

@@ -21,8 +21,8 @@ function createASTElement(tagName, attrs) {
   };
 }
 function start(tagName, attrs) {
-  console.log(`开始${tagName}标签，attrs是`);
-  console.log(attrs);
+  // console.log(`开始${tagName}标签，attrs是`);
+  // console.log(attrs);
   let element = createASTElement(tagName, attrs);
   if (!root) {
     root = element;
@@ -31,7 +31,7 @@ function start(tagName, attrs) {
   stack.push(element);
 }
 function end(tagName) {
-  console.log(`结束${tagName}标签`);
+  // console.log(`结束${tagName}标签`);
   let element = stack.pop();
   currentParent = stack[stack.length - 1];
   if (currentParent) {
@@ -40,7 +40,7 @@ function end(tagName) {
   }
 }
 function chars(text) {
-  console.log(`文本是${text}`);
+  // console.log(`文本是${text}`);
   text = text.replace(/\s/g, "");
   if (text) {
     currentParent.children.push({

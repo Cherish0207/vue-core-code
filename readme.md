@@ -537,7 +537,7 @@ export function compileToFunctions(template) {
 `vm._render` 通过解析的`render`方法渲染出虚拟`dom`
 `vm._update` 通过虚拟`dom`创建真实的`dom`
 
-1)将 template转换成ast语法树->生成 render方法->生成虚拟dom->真实的dom 
+1)将 template模版转换成ast语法树(compile编译)->生成 render方法->生成虚拟dom->真实的dom 
 重新生成虚拟dom->更新dom
 
 先调用_render方法生成虚拟dom,通过_update方法将虚拟dom创建成真实的dom
