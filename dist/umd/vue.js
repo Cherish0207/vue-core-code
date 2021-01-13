@@ -217,6 +217,52 @@
     };
   });
 
+  var id = 0;
+
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.id = id++;
+      this.subs = [];
+    }
+
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        if (Dep.target) {
+          Dep.target.addDep(this); // 让watcher,去存放dep
+        }
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }]);
+
+    return Dep;
+  }();
+
+  var stack = [];
+  function pushTarget(watcher) {
+    console.log('pushTarget');
+    Dep.target = watcher;
+    stack.push(watcher);
+  }
+  function popTarget() {
+    console.log('popTarget');
+    stack.pop();
+    Dep.target = stack[stack.length - 1];
+  }
+
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
       _classCallCheck(this, Observer);
@@ -254,14 +300,23 @@
 
   function defineReactive(data, key, value) {
     observe(value);
+    var dep = new Dep();
     Object.defineProperty(data, key, {
       get: function get() {
+        if (Dep.target) {
+          // 如果取值时有watcher
+          console.log('get dep.depend');
+          dep.depend(); // 让watcher保存dep，并且让dep 保存watcher
+        }
+
         return value;
       },
       set: function set(newValue) {
+        console.log('set');
         if (newValue == value) return;
         observe(newValue);
         value = newValue;
+        dep.notify(); // 通知渲染watcher去更新
       }
     });
   }
@@ -304,7 +359,7 @@
 
   var root;
   var currentParent;
-  var stack = [];
+  var stack$1 = [];
   var ELEMENT_TYPE = 1;
   var TEXT_TYPE = 3;
 
@@ -328,13 +383,13 @@
     }
 
     currentParent = element;
-    stack.push(element);
+    stack$1.push(element);
   }
 
   function end(tagName) {
     // console.log(`结束${tagName}标签`);
-    var element = stack.pop();
-    currentParent = stack[stack.length - 1];
+    var element = stack$1.pop();
+    currentParent = stack$1[stack$1.length - 1];
 
     if (currentParent) {
       element.parent = currentParent;
@@ -515,7 +570,7 @@
     return renderFn;
   }
 
-  var id = 0;
+  var id$1 = 0;
 
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, exprOrFn, cb, options) {
@@ -530,14 +585,34 @@
 
       this.cb = cb;
       this.options = options;
-      this.id = id++;
+      this.id = id$1++;
+      this.deps = [];
+      this.depsId = new Set();
       this.get();
     }
 
     _createClass(Watcher, [{
       key: "get",
       value: function get() {
+        pushTarget(this);
         this.getter();
+        popTarget();
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.depsId.add(id);
+          this.deps.push(dep);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.get();
       }
     }]);
 

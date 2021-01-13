@@ -7,7 +7,7 @@
 </head>
 <body>
   <div id="app">
-    <div style="color:red">hello  <span>{{name}}</span></div>
+    <div style="color:red">hello  <span>{{name}}{{name}}{{name}}</span></div>
   </div>
   <script src="../dist/umd/vue.js"></script>
   <script>
@@ -27,6 +27,9 @@
       },
     })
     console.log(vm);
+    setTimeout(function(){
+      vm.name = 'silence'
+    }, 1000)
   </script>
 </body>
 </html>
