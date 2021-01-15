@@ -238,7 +238,7 @@
       key: "notify",
       value: function notify() {
         this.subs.forEach(function (watcher) {
-          return watcher.update();
+          return watcher.run();
         });
       }
     }, {
@@ -570,6 +570,76 @@
     return renderFn;
   }
 
+  var callbacks = [];
+
+  function flushCallbacks() {
+    callbacks.forEach(function (cb) {
+      return cb();
+    });
+  }
+
+  var timerFunc;
+
+  if (Promise) {
+    // then方法是异步的
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    // MutationObserver 也是一个异步方法
+    var observe$1 = new MutationObserver(flushCallbacks); // H5的api
+
+    var textNode = document.createTextNode(1);
+    observe$1.observe(textNode, {
+      characterData: true
+    });
+
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = function timerFunc() {
+      setTimeout(flushCallbacks, 0);
+    };
+  }
+
+  function nextTick(cb) {
+    callbacks.push(cb);
+    timerFunc();
+  }
+
+  var has = {};
+  var queue = [];
+
+  function flushSchedulerQueue() {
+    for (var i = 0; i < queue.length; i++) {
+      var watcher = queue[i];
+      watcher.run();
+    }
+
+    queue = [];
+    has = {};
+  }
+
+  var pending = false;
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (has[id] == null) {
+      has[id] = true;
+      queue.push(watcher);
+
+      if (!pending) {
+        nextTick(flushSchedulerQueue);
+        pending = true;
+      }
+    }
+  }
+
   var id$1 = 0;
 
   var Watcher = /*#__PURE__*/function () {
@@ -612,6 +682,11 @@
     }, {
       key: "update",
       value: function update() {
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
         this.get();
       }
     }]);
@@ -682,7 +757,8 @@
     callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
-      // 将虚拟节点 渲染到页面上
+      console.log('updateComponent'); // 将虚拟节点 渲染到页面上
+
       vm._update(vm._render());
     };
 
