@@ -18,12 +18,10 @@ class Dep {
 }
 let stack = [];
 export function pushTarget(watcher) {
-  console.log('pushTarget');
   Dep.target = watcher;
   stack.push(watcher);
 }
 export function popTarget() {
-  console.log('popTarget');
   stack.pop();
   Dep.target = stack[stack.length - 1];
 }

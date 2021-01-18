@@ -702,3 +702,4 @@ function updateProperties(vnode){
     }
 }
 ```
+nextTick方法就是对异步方法对封装，优雅降级

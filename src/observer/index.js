@@ -32,13 +32,11 @@ function defineReactive(data, key, value) {
   Object.defineProperty(data, key, {
     get() {
       if(Dep.target){ // 如果取值时有watcher
-        console.log('get dep.depend');
         dep.depend(); // 让watcher保存dep，并且让dep 保存watcher
       }
       return value;
     },
     set(newValue) {
-      console.log('set');
       if (newValue == value) return;
         observe(newValue);
         value = newValue;
