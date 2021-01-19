@@ -25,9 +25,12 @@
         mounted() {
           // console.log('mounted')
         },
+        updated() {
+          console.log('updated')
+        },
         watch: {
           name(newValue, oldValue) {
-            console.log(newValue, oldValue);
+            // console.log(newValue, oldValue);
           },
         },
       });

@@ -1,4 +1,3 @@
-import { log } from "debug";
 import Watcher from "./observer/watcher";
 import { patch } from "./utils/patch";
 
@@ -12,9 +11,10 @@ export function mountComponent(vm, el) {
   vm.$el = el;
   callHook(vm, "beforeMount");
   let updateComponent = () => {
-    console.log("updateComponent");
+    // console.log("updateComponent");
     // 将虚拟节点 渲染到页面上
     vm._update(vm._render());
+    // callHook(vm, "updated");
   };
   new Watcher(vm, updateComponent, () => {}, true);
   callHook(vm, "mounted");

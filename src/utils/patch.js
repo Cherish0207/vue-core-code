@@ -1,4 +1,5 @@
 export function patch(oldVnode, vnode) {
+  console.log(oldVnode, vnode);
   const isRealElement = oldVnode.nodeType;
   if (isRealElement) {
     const oldElm = oldVnode;

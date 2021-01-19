@@ -42,11 +42,9 @@ class Watcher {
     }
   }
   update() {
-    console.log("update");
     queueWatcher(this);
   }
   run() {
-    console.log("run");
     const oldValue = this.value;
     const newValue = this.get();
     this.value = newValue;
