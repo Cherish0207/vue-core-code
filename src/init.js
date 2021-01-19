@@ -2,17 +2,19 @@ import { initState } from "./state";
 import { compileToFunctions } from "./compiler/index";
 import { mountComponent, callHook } from "./lifecycle";
 import { mergeOptions } from "./utils/mergeOptions";
+import { nextTick } from "./utils/next-tick";
+import Watcher from "./observer/watcher";
 
 export function initMixin(Vue) {
   Vue.prototype._init = function (options) {
     const vm = this;
-    this.$options = mergeOptions(vm.constructor.options,options);
+    this.$options = mergeOptions(vm.constructor.options, options);
 
     // 初始化状态
-    callHook(vm,'beforeCreate');
+    callHook(vm, "beforeCreate");
     initState(vm);
-    callHook(vm,'created');
-    
+    callHook(vm, "created");
+
     // 页面挂载
     if (vm.$options.el) {
       vm.$mount(vm.$options.el);
@@ -33,5 +35,19 @@ export function initMixin(Vue) {
       options.render = render;
     }
     mountComponent(vm, el);
+  };
+}
+
+export function stateMixin(Vue) {
+  Vue.prototype.$nextTick = function (cb) {
+    nextTick(cb);
+  };
+  Vue.prototype.$watch = function (exprOrFn, cb, options = {}) {
+    options.user = true; // 标记为用户watcher
+    // 核心就是创建个watcher
+    const watcher = new Watcher(this, exprOrFn, cb, options);
+    if (options.immediate) {
+      cb.call(vm, watcher.value);
+    }
   };
 }

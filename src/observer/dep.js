@@ -10,7 +10,8 @@ class Dep {
     }
   }
   notify() {
-    this.subs.forEach((watcher) => watcher.run());
+    console.log('notify',this.subs);
+    this.subs.forEach((watcher) => watcher.update());
   }
   addSub(watcher) {
     this.subs.push(watcher);

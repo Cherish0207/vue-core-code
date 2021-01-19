@@ -11,6 +11,7 @@ function flushSchedulerQueue() {
   }
   queue = [];
   has = {}
+  pending = false;
 }
 let pending = false
 export function queueWatcher(watcher) {

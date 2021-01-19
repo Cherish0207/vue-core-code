@@ -20,21 +20,21 @@
       },
       el: '#app',
       created() {
-        console.log('created')
+        // console.log('created')
       },
       mounted() {
-        console.log('mounted')
+        // console.log('mounted')
       },
+      watch:{
+        name(newValue,oldValue){
+        	console.log(newValue,oldValue);
+    	  }
+      }
     })
-    console.log(vm);
     vm.name = 'silence'
-    vm.name = 'silence'
-    vm.name = 'silence'
-    vm.name = 'silence'
-    vm.name = 'silence44'
     setTimeout(function(){
       vm.name = 'silence--'
-    })
+    },1000)
   </script>
 </body>
 </html>
