@@ -20,10 +20,10 @@ export function def(data, key, value) {
   });
 }
 /**
- * 
- * @param {*} vm 
- * @param {*} source 
- * @param {*} key 
+ *
+ * @param {*} vm
+ * @param {*} source
+ * @param {*} key
  */
 export function proxy(vm, source, key) {
   Object.defineProperty(vm, key, {

@@ -31,17 +31,18 @@ function defineReactive(data, key, value) {
   let dep = new Dep();
   Object.defineProperty(data, key, {
     get() {
-      if(Dep.target){ // 如果取值时有watcher
+      if (Dep.target) {
+        // 如果取值时有watcher
         dep.depend(); // 让watcher保存dep，并且让dep 保存watcher
       }
       return value;
     },
     set(newValue) {
       if (newValue == value) return;
-        observe(newValue);
-        value = newValue;
-        dep.notify(); // 通知渲染watcher去更新
-      },
+      observe(newValue);
+      value = newValue;
+      dep.notify(); // 通知渲染watcher去更新
+    },
   });
 }
 export function observe(data) {

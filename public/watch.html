@@ -10,12 +10,12 @@
     <div id="app">{{ a }}</div>
     <script>
       let vm = new Vue({
-        el: '#app',
+        el: "#app",
         data() {
           return {
             a: 1,
-            b:2,
-            c:3
+            b: 2,
+            c: 3,
           };
         },
         watch: {
@@ -27,8 +27,8 @@
           },
           c(newVal, oldVal) {
             console.log(newVal);
-          }
-        }
+          },
+        },
       });
       vm.a = 100;
       console.log(vm);

@@ -101,5 +101,5 @@ export default function parseHTML(html) {
       }
     }
   }
-  return root
+  return root;
 }

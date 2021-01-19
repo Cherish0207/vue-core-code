@@ -1,5 +1,5 @@
-import parseHTML from './parser-html'
-import generate from './generate'
+import parseHTML from "./parser-html";
+import generate from "./generate";
 
 export function compileToFunctions(template, vm) {
   let root = parseHTML(template);

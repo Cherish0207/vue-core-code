@@ -1,4 +1,4 @@
-const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; 
+const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
 
 export default function generate(el) {
   let children = getChildren(el);

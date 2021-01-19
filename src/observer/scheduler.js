@@ -1,27 +1,25 @@
-import {
-  nextTick
-} from '../utils/next-tick'
+import { nextTick } from "../utils/next-tick";
 let has = {};
 let queue = [];
 
 function flushSchedulerQueue() {
   for (let i = 0; i < queue.length; i++) {
-      let watcher = queue[i];
-      watcher.run()
+    let watcher = queue[i];
+    watcher.run();
   }
   queue = [];
-  has = {}
+  has = {};
   pending = false;
 }
-let pending = false
+let pending = false;
 export function queueWatcher(watcher) {
   const id = watcher.id;
   if (has[id] == null) {
-      has[id] = true;
-      queue.push(watcher);
-      if(!pending){
-          nextTick(flushSchedulerQueue)
-          pending = true;
-      }
+    has[id] = true;
+    queue.push(watcher);
+    if (!pending) {
+      nextTick(flushSchedulerQueue);
+      pending = true;
+    }
   }
 }
