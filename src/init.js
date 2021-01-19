@@ -1,5 +1,5 @@
 import { initState } from "./state";
-import { compileToFunctions } from "./compiler/index";
+import { compileToFunction } from "./compiler/index";
 import { mountComponent, callHook } from "./lifecycle";
 import { mergeOptions } from "./utils/mergeOptions";
 import { nextTick } from "./utils/next-tick";
@@ -31,7 +31,7 @@ export function initMixin(Vue) {
       if (!template && el) {
         template = el.outerHTML;
       }
-      const render = compileToFunctions(template);
+      const render = compileToFunction(template);
       options.render = render;
     }
     mountComponent(vm, el);

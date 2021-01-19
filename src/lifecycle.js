@@ -4,7 +4,14 @@ import { patch } from "./utils/patch";
 export function lifecycleMixin(Vue) {
   Vue.prototype._update = function (vnode) {
     const vm = this;
-    vm.$el = patch(vm.$el, vnode);
+    const prevVnode = vm._vnode; // 保留上一次的vnode
+    vm._vnode = vnode;
+    if (!prevVnode) {
+      vm.$el = patch(vm.$el, vnode); // 需要用虚拟节点创建出真实节点 替换掉 真实的$el
+      // 我要通过虚拟节点 渲染出真实的dom
+    } else {
+      vm.$el = patch(prevVnode, vnode); // 更新时做diff操作
+    }
   };
 }
 export function mountComponent(vm, el) {
