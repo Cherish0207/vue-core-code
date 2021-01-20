@@ -51,8 +51,12 @@ function updateChildren(parent, oldChildren, newChildren) {
   let newEndVnode = newChildren[newEndIndex];
 
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-    // 优化向后追加逻辑
-    if (isSameVnode(oldStartVnode, newStartVnode)) {
+    if (!oldStartVnode) {
+      oldStartVnode = oldChildren[++oldStartIndex];
+    } else if (!oldEndVnode) {
+      oldEndVnode = oldChildren[--oldEndIndex];
+    } else if (isSameVnode(oldStartVnode, newStartVnode)) {
+      // 优化向后追加逻辑
       patch(oldStartVnode, newStartVnode);
       oldStartVnode = oldChildren[++oldStartIndex];
       newStartVnode = newChildren[++newStartIndex];
@@ -73,6 +77,20 @@ function updateChildren(parent, oldChildren, newChildren) {
       parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
       oldEndVnode = oldChildren[--oldEndIndex];
       newStartVnode = newChildren[++newStartIndex];
+    } else {
+      let map = makeIndexByKey(oldChildren);
+      let moveIndex = map[newStartVnode.key];
+      if (moveIndex == undefined) {
+        // 老的中没有将新元素插入
+        parent.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+      } else {
+        // 有的话做移动操作
+        let moveVnode = oldChildren[moveIndex];
+        oldChildren[moveIndex] = undefined;
+        parent.insertBefore(moveVnode.el, oldStartVnode.el);
+        patch(moveVnode, newStartVnode);
+      }
+      newStartVnode = newChildren[++newStartIndex];
     }
   }
   if (newStartIndex <= newEndIndex) {
@@ -82,6 +100,14 @@ function updateChildren(parent, oldChildren, newChildren) {
           ? null
           : newChildren[newEndIndex + 1].el;
       parent.insertBefore(createElm(newChildren[i]), ele);
+    }
+  }
+  if (oldStartIndex <= oldEndIndex) {
+    for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+      let child = oldChildren[i];
+      if (child != undefined) {
+        parent.removeChild(child.el);
+      }
     }
   }
 }
@@ -99,6 +125,13 @@ export function createElm(vnode) {
   return vnode.el;
 }
 
+function makeIndexByKey(children) {
+  let map = {};
+  children.forEach((item, index) => {
+    map[item.key] = index;
+  });
+  return map;
+}
 function updateProperties(vnode, oldProps = {}) {
   let newProps = vnode.data || {};
   let el = vnode.el;
