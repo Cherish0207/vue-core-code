@@ -45,7 +45,7 @@ export function stateMixin(Vue) {
   Vue.prototype.$watch = function (exprOrFn, cb, options = {}) {
     options.user = true; // 标记为用户watcher
     // 核心就是创建个watcher
-    const watcher = new Watcher(this, exprOrFn, cb, options);
+    const watcher = new Watcher(this, exprOrFn, cb, options, exprOrFn + '用户watcher');
     if (options.immediate) {
       cb.call(vm, watcher.value);
     }

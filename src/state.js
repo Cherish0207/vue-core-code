@@ -1,4 +1,6 @@
 import { observe } from "./observer/index.js";
+import Watcher from "./observer/watcher.js";
+import Dep from "./observer/dep.js";
 import { proxy, isObject } from "./utils/index";
 
 export function initState(vm) {
@@ -8,6 +10,9 @@ export function initState(vm) {
   }
   if (opts.watch) {
     initWatch(vm, opts.watch);
+  }
+  if (opts.computed) {
+    initComputed(vm, opts.computed);
   }
 }
 function initData(vm) {
@@ -43,4 +48,46 @@ function createWatcher(vm, exprOrFn, handler, options) {
     handler = vm[handler];
   }
   return vm.$watch(exprOrFn, handler, options);
+}
+function initComputed(vm, computed) {
+  // 存放计算属性的watcher
+  const watchers = (vm._computedWatchers = {});
+  for (const key in computed) {
+    const userDef = computed[key];
+    // 获取get方法
+    const getter = typeof userDef === "function" ? userDef : userDef.get;
+    // 创建计算属性watcher
+    watchers[key] = new Watcher(vm, getter, () => {}, { lazy: true }, key + '_computed');
+    defineComputed(vm, key, userDef);
+  }
+}
+const sharedPropertyDefinition = {};
+function defineComputed(target, key, userDef) {
+  console.log('computedGetter');
+  if (typeof userDef === "function") {
+    sharedPropertyDefinition.get = createComputedGetter(key);
+  } else {
+    sharedPropertyDefinition.get = createComputedGetter(key);
+    sharedPropertyDefinition.set = userDef.set;
+  }
+  // 使用defineProperty定义
+  Object.defineProperty(target, key, sharedPropertyDefinition);
+}
+function createComputedGetter(key) {
+  return function computedGetter() {
+    const watcher = this._computedWatchers[key];
+    if (watcher) {
+      if (watcher.dirty) {
+        // 如果dirty为true
+        watcher.evaluate(); // 计算出新值，并将dirty 更新为false
+      }
+      if (Dep.target) {
+        // 计算属性在模板中使用 则存在Dep.target
+        watcher.depend();
+        console.log(watcher);
+      }
+      // 如果依赖的值不发生变化，则返回上次计算的结果
+      return watcher.value;
+    }
+  };
 }

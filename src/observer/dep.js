@@ -1,8 +1,9 @@
 let id = 0;
 class Dep {
-  constructor() {
+  constructor(key) {
     this.id = id++;
     this.subs = [];
+    this.key = key
   }
   depend() {
     if (Dep.target) {

@@ -2,10 +2,13 @@ import { pushTarget, popTarget } from "./dep";
 import { queueWatcher } from "./scheduler.js";
 let id = 0;
 class Watcher {
-  constructor(vm, exprOrFn, cb, options) {
+  constructor(vm, exprOrFn, cb, options, key) {
     this.vm = vm;
     this.exprOrFn = exprOrFn;
     this.user = !!options.user;
+    this.lazy = options.lazy;
+    this.dirty = this.lazy;
+    this.key = key
     // 把当前的属性编程取值表达式，当取之是
     if (typeof exprOrFn == "function") {
       this.getter = exprOrFn;
@@ -25,7 +28,11 @@ class Watcher {
     this.id = id++;
     this.deps = [];
     this.depsId = new Set();
-    this.value = this.get(); // 将初始值记录到value属性上
+    this.value = this.lazy ? undefined : this.get(); // 将初始值记录到value属性上
+  }
+  evaluate() {
+    this.value = this.get();
+    this.dirty = false;
   }
   get() {
     pushTarget(this);
@@ -42,7 +49,11 @@ class Watcher {
     }
   }
   update() {
-    queueWatcher(this);
+    if (this.lazy) {
+      this.dirty = true;
+    } else {
+      queueWatcher(this);
+    }
   }
   run() {
     const oldValue = this.value;
@@ -50,6 +61,13 @@ class Watcher {
     this.value = newValue;
     if (this.user) {
       this.cb.call(this, newValue, oldValue);
+    }
+  }
+  depend() {
+    console.log(this);
+    let i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend();
     }
   }
 }

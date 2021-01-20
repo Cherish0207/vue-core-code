@@ -6,8 +6,29 @@
     <title>Document</title>
   </head>
   <body>
+    <div id="app">
+      {{ a }}
+      <span>{{ name }} </span>
+    </div>
     <script src="../dist/umd/vue.js"></script>
     <script>
+      const vm = new Vue({
+        el: '#app',
+        data() {
+          return {
+            firstName: 'che',
+            lastName: 'rish',
+            a: '__a'
+          }
+        },
+        computed: {
+          name: {
+            get() {
+              return this.firstName + this.lastName
+            }
+          }
+        }
+      })
     </script>
   </body>
 </html>

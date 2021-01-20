@@ -23,7 +23,7 @@ export function mountComponent(vm, el) {
     vm._update(vm._render());
     // callHook(vm, "updated");
   };
-  new Watcher(vm, updateComponent, () => {}, true);
+  new Watcher(vm, updateComponent, () => {}, true, '渲染watcher');
   callHook(vm, "mounted");
 }
 export function callHook(vm, hook) {
