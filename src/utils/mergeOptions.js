@@ -23,6 +23,16 @@ function mergeHook(parentVal, childValue) {
 LIFECYCLE_HOOKS.forEach((hook) => {
   strats[hook] = mergeHook;
 });
+function mergeAssets(parentVal, childVal) {
+  const res = Object.create(parentVal);
+  if (childVal) {
+    for (let key in childVal) {
+      res[key] = childVal[key];
+    }
+  }
+  return res;
+}
+strats.components = mergeAssets;
 export function mergeOptions(parent, child) {
   const options = {};
   for (let key in parent) {
@@ -42,8 +52,10 @@ export function mergeOptions(parent, child) {
           ...parent[key],
           ...child[key],
         };
-      } else {
+      } else if (child[key]) {
         options[key] = child[key];
+      } else {
+        options[key] = parent[key];
       }
     }
   }

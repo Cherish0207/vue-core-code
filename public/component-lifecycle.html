@@ -7,8 +7,6 @@
   </head>
   <body>
     <div id="app">
-      {{ a }}
-      <span>{{ name }} </span>
       <aa></aa>
     </div>
     <script src="../dist/umd/vue.js"></script>
@@ -18,27 +16,37 @@
       })
       const vm = new Vue({
         el: "#app",
-        data() {
-          return {
-            firstName: "che",
-            lastName: "rish",
-            a: "__a",
-          };
+        beforeCreate() {
+          console.log('parent beforeCreate');
+        },
+        created() {
+          console.log('parent created');
+        },
+        beforeMount() {
+          console.log('parent beforeMount');
+        },
+        mounted() {
+          console.log('parent mounted');
         },
         components: {
           aa: {
             template: '<div>aa hello</div>',
+            beforeCreated() {
+              console.log('child beforeCreated');
+            },
+            created() {
+              console.log('child created');
+            },
+            beforeMount() {
+              console.log('child beforeMount');
+            },
+            mounted() {
+              console.log('child mounted');
+            },
           },
           bb: {
             template: '<div>bb word</div>'
           }
-        },
-        computed: {
-          name: {
-            get() {
-              return this.firstName + this.lastName;
-            },
-          },
         },
       });
       console.log(vm);

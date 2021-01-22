@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      #app {
+        width: 500px;
+        margin: 0 auto;
+      }
+      textarea {
+        width: 500px;
+        height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <textarea v-html="content"></textarea>
+      <button @click="run">运行</button>
+    </div>
+    <div id="mask"></div>
+    <script src="../node_modules//vue/dist/vue.js"></script>
+    <script>
+      /**
+       * 全局组件
+指令 过滤器 
+       * */
+      const vm = new Vue({
+        el: "#app",
+        data() {
+          return {
+            content: "",
+          };
+        },
+        mounted() {
+          this.run();
+        },
+        methods: {
+          getSource(type) {
+            const reg = new RegExp(`<${type}[^>]*>`);
+            let content = this.content;
+            let matches = content.match(reg);
+            console.log(matches);
+            if (matches) {
+              let start = content.indexOf(matches[0]) + matches[0].length;
+              let end = content.lastIndexOf(`</${type}`);
+              return content.slice(start, end);
+            }
+          },
+          run() {
+            this.content = `
+                <template>
+                </template>
+                <style>
+                </style>`;
+            let template = this.getSource("template");
+            let styleCss = this.getSource("style");
+            let script = this.getSource("script").replace(
+              /export default/,
+              "return"
+            );
+            let obj = new Function(script)();
+            obj.template = template;
+            let ChildComp = Vue.extend(obj);
+            let styleEle = document.createElement("style");
+            styleEle.innerHTML = styleCss;
+            // console.log(ChildComp);
+            new ChildComp().$mount("#mask");
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

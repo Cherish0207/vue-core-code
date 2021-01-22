@@ -6,7 +6,7 @@ export function renderMixin(Vue) {
   };
   Vue.prototype._c = function () {
     // 创建元素
-    return createElement(...arguments);
+    return createElement(this, ...arguments);
   };
   Vue.prototype._s = function (val) {
     return val == null

@@ -702,4 +702,34 @@ function updateProperties(vnode){
     }
 }
 ```
-nextTick方法就是对异步方法对封装，优雅降级
+nextTick方法就是对异步方法对封装，优雅降级 
+
+watch
+渲染
+$watch 
+computed
+## Vue组件原理解析
+> 定义组件的2种方式
+> - 全局组件：
+>
+> 使用VueVue.component()全局方法
+Vue.component()
+实现：
+1.增加全局方法 
+> - 局部组件
+>
+> ps. 全局/局部过滤器  &  全局/局部指令
+
+- 我们可以通过Vue.component注册全局组件，之后可以在模板中进行使用
+- Vue.component内部会调用Vue.extend方法，将定义挂载到Vue.options.components上。这也说明所有的全局组件最终都会挂载到这个变量上
+- extend方法就是创建出一个子类，继承于Vue,并返回这个类
+- 属性合并
+- 初始化合并
+### 组件的渲染流程
+1. 调用Vue.component
+2. 内部用的是Vue.extend 就是产生一个子类来继承父类 
+3. 等会创建子类实例时会调用父类的init方法,再 $mount即可
+4. 组件的初始化就是new这个组件的构造函数并且调用 Smount方法
+5. 创建虚拟节点根据标签筛出组件对应,生成组件的虚拟节点 componentOptions里面包含Ctor, children
+6. 组件创建真实dom时(先渲染的是父组件)遇到是组件的虚拟节点时,去调用init方法,让组件初始化并挂载,组件的$mount无参数会把渲染后的dom放到vm.$el上=》 vnode.componentinstance中,这样渲染时就获取这个对象的$el属性来渲染
+```

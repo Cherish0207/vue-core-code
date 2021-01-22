@@ -1,4 +1,8 @@
 export function patch(oldVnode, vnode) {
+  if (!oldVnode) {
+    console.log(oldVnode, vnode);
+    return createElm(vnode);
+  }
   const isRealElement = oldVnode.nodeType;
   if (isRealElement) {
     const oldElm = oldVnode;
@@ -114,6 +118,9 @@ function updateChildren(parent, oldChildren, newChildren) {
 export function createElm(vnode) {
   let { tag, children, key, data, text } = vnode;
   if (typeof tag === "string") {
+    if (createComponent(vnode)) {
+      return vnode.componentInstance.$el;
+    }
     vnode.el = document.createElement(tag);
     updateProperties(vnode);
     children.forEach((child) => {
@@ -124,7 +131,15 @@ export function createElm(vnode) {
   }
   return vnode.el;
 }
-
+function createComponent(vnode) {
+  let i = vnode.data;
+  if ((i = i.hook) && (i = i.init)) {
+    i(vnode);
+  }
+  if (vnode.componentInstance) {
+    return true;
+  }
+}
 function makeIndexByKey(children) {
   let map = {};
   children.forEach((item, index) => {

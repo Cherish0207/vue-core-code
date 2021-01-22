@@ -35,3 +35,15 @@ export function proxy(vm, source, key) {
     },
   });
 }
+function makeMap(str) {
+  const map = {};
+  const list = str.split(',');
+  for (let i = 0; i < list.length; i++) {
+      map[list[i]] = true;
+  }
+  return (key)=>map[key];
+}
+
+export const isReservedTag = makeMap(
+  'a,div,img,image,text,span,input,p,button'
+)
