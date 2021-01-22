@@ -63,7 +63,6 @@ function initComputed(vm, computed) {
 }
 const sharedPropertyDefinition = {};
 function defineComputed(target, key, userDef) {
-  console.log('computedGetter');
   if (typeof userDef === "function") {
     sharedPropertyDefinition.get = createComputedGetter(key);
   } else {
@@ -84,7 +83,6 @@ function createComputedGetter(key) {
       if (Dep.target) {
         // 计算属性在模板中使用 则存在Dep.target
         watcher.depend();
-        console.log(watcher);
       }
       // 如果依赖的值不发生变化，则返回上次计算的结果
       return watcher.value;

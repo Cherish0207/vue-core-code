@@ -64,7 +64,6 @@ class Watcher {
     }
   }
   depend() {
-    console.log(this);
     let i = this.deps.length;
     while (i--) {
       this.deps[i].depend();

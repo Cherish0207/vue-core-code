@@ -35,7 +35,6 @@ function defineReactive(data, key, value) {
         // 如果取值时有watcher
         dep.depend(); // 让watcher保存dep，并且让dep 保存watcher
       }
-      console.log(key,dep.subs);
       return value;
     },
     set(newValue) {
