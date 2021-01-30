@@ -4,6 +4,7 @@ export function initGlobalAPI(Vue) {
   Vue.options = {};
 
   initMixin(Vue);
+  initUse(Vue);
 
   // _base 就是Vue的构造函数
   Vue.options._base = Vue;
@@ -20,6 +21,24 @@ function initMixin(Vue) {
     // 将属性合并到Vue.options上
     this.options = mergeOptions(this.options, mixin);
     return this;
+  };
+}
+function initUse(Vue) {
+  Vue.use = function (plugin) {
+    var installedPlugins = (this._installedPlugins =
+      this._installedPlugins || []);
+    if(installedPlugins.indexOf(plugin) > -1) {
+      return this
+    }
+    var args = Array.prototype.slice.call(arguments, 1)
+    args.unshift(this)
+    if(typeof plugin === 'function') {
+      plugin.call(null, ...args)
+    }else if(typeof plugin.install === 'function') {
+      plugin.install.call(plugin, ...args)
+    }
+    installedPlugins.push(plugin)
+    return this
   };
 }
 export default function initAssetRegisters(Vue) {
